@@ -1,0 +1,70 @@
+
+import base64
+import datetime
+from config import APPLICATION_KEYWORDS, PLATFORM_SENDERS, SEARCH_DAYS
+
+
+def build_query() -> str:
+    keywords = " OR ".join(f'"{kw}"' if " " in kw else kw for kw in APPLICATION_KEYWORDS)
+    keyword_query = f"subject:({keywords})"
+
+    since = datetime.date.today() - datetime.timedelta(days=SEARCH_DAYS)
+    date_query = f"after:{since.strftime('%Y/%m/%d')}"
+
+    return f"{keyword_query} {date_query}".strip()
+
+
+def fetch_emails(service) -> list[dict]:
+    query = build_query()
+    emails = []
+
+    # Get first page of message IDs
+    response = service.users().messages().list(
+        userId="me",
+        q=query
+    ).execute()
+
+    messages = response.get("messages", [])
+
+    # Fetch full message for each ID
+    for msg_meta in messages:
+        msg = service.users().messages().get(
+            userId="me",
+            id=msg_meta["id"],
+            format="full"
+        ).execute()
+
+        headers = msg["payload"]["headers"]
+        header_map = {h["name"]: h["value"] for h in headers}
+
+        subject = header_map.get("Subject", "")
+        sender  = header_map.get("From", "")
+        date    = header_map.get("Date", "")
+        body    = decode_body(msg["payload"])
+
+        emails.append({
+            "id":      msg_meta["id"],
+            "subject": subject,
+            "sender":  sender,
+            "date":    date,
+            "snippet": msg.get("snippet", ""),
+            "body":    body
+        })
+
+    return emails
+
+
+def decode_body(payload: dict) -> str:
+    mime = payload.get("mimeType", "")
+
+    if mime == "text/plain":
+        data = payload.get("body", {}).get("data", "")
+        if data:
+            return base64.urlsafe_b64decode(data).decode("utf-8")
+        return ""
+
+    if mime.startswith("multipart"):
+        parts = payload.get("parts", [])
+        return " ".join(decode_body(part) for part in parts)
+
+    return ""
