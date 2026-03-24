@@ -4,8 +4,13 @@ from config import APPLICATION_KEYWORDS, OA_KEYWORDS, PLATFORM_SENDERS, SEARCH_D
 
 
 def build_query() -> str:
-    app_kw = " OR ".join(f'"{kw}"' if " " in kw else kw for kw in APPLICATION_KEYWORDS)
-    oa_kw  = " OR ".join(f'"{kw}"' if " " in kw else kw for kw in OA_KEYWORDS)
+    # Quote any keyword that contains a space or hyphen — bare hyphens in
+    # Gmail search are treated as NOT operators and would exclude results.
+    def _quote(kw):
+        return f'"{kw}"' if (" " in kw or "-" in kw) else kw
+
+    app_kw = " OR ".join(_quote(kw) for kw in APPLICATION_KEYWORDS)
+    oa_kw  = " OR ".join(_quote(kw) for kw in OA_KEYWORDS)
     keyword_query = f"(subject:({app_kw}) OR ({oa_kw}))"
 
     since = datetime.date.today() - datetime.timedelta(days=SEARCH_DAYS)
