@@ -84,6 +84,14 @@ PLATFORM_SENDERS = [
     "hire.com",
     "breezy.hr",
     "bamboohr.com",
+    # OA platforms
+    "hackerrank.com",
+    "codility.com",
+    "codesignal.com",
+    "hirevue.com",
+    "pymetrics.ai",
+    "hiredscore.com",
+    "karat.com",
 ]
 
 # How far back to search (in days).

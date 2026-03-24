@@ -1,11 +1,12 @@
 import base64
 import datetime
-from config import APPLICATION_KEYWORDS, PLATFORM_SENDERS, SEARCH_DAYS
+from config import APPLICATION_KEYWORDS, OA_KEYWORDS, PLATFORM_SENDERS, SEARCH_DAYS
 
 
 def build_query() -> str:
-    keywords = " OR ".join(f'"{kw}"' if " " in kw else kw for kw in APPLICATION_KEYWORDS)
-    keyword_query = f"subject:({keywords})"
+    app_kw = " OR ".join(f'"{kw}"' if " " in kw else kw for kw in APPLICATION_KEYWORDS)
+    oa_kw  = " OR ".join(f'"{kw}"' if " " in kw else kw for kw in OA_KEYWORDS)
+    keyword_query = f"(subject:({app_kw}) OR ({oa_kw}))"
 
     since = datetime.date.today() - datetime.timedelta(days=SEARCH_DAYS)
     date_query = f"after:{since.strftime('%Y/%m/%d')}"
