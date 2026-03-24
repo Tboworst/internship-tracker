@@ -4,7 +4,13 @@ A full-stack web app that connects to your Gmail and automatically categorizes y
 
 ## Screenshots
 
-<!-- Add screenshots here -->
+
+https://github.com/user-attachments/assets/ef3722d4-c9a9-4dea-8a09-62778977d868
+
+<img width="1469" height="867" alt="Screenshot 2026-03-24 at 4 26 11 PM" src="https://github.com/user-attachments/assets/b4365722-fa1b-4afe-9bb8-d6d982760a1d" />
+
+
+
 
 ## Features
 
