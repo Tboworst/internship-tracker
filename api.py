@@ -24,7 +24,9 @@ app = FastAPI()
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 SECRET_KEY = os.environ["SECRET_KEY"]          # set in Railway env vars
-OAUTH_STATES: dict[str, str] = {}  # state -> code_verifier
+ADMIN_KEY  = os.getenv("ADMIN_KEY", "")        # set in Railway — only you know this
+OAUTH_STATES: dict[str, str] = {}              # state -> code_verifier
+user_count: int = 0                            # resets on redeploy
 
 app.add_middleware(
     CORSMiddleware,
@@ -105,6 +107,9 @@ def auth_google_callback(
     creds = flow.credentials
     session_token = _make_session_token(creds.token, creds.refresh_token)
 
+    global user_count
+    user_count += 1
+
     return RedirectResponse(f"{FRONTEND_URL}/?token={session_token}")
 
 
@@ -141,3 +146,13 @@ def get_emails(authorization: str | None = Header(None)):
 def get_summary(authorization: str | None = Header(None)):
     """Returns counts per status."""
     return get_emails(authorization)
+
+
+# ── Admin route (only you) ─────────────────────────────────────────
+
+@app.get("/admin/stats")
+def admin_stats(key: str = Query(default="")):
+    """Returns user count. Protected by ADMIN_KEY query param."""
+    if not ADMIN_KEY or key != ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return {"users_since_last_deploy": user_count}

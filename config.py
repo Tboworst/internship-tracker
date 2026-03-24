@@ -1,22 +1,42 @@
 # config.py
 # ─────────────────────────────────────────────────────────────────
 # Central place for all keywords and settings.
-# Tweak these lists to match the emails you're actually receiving.
 # ─────────────────────────────────────────────────────────────────
 
-# Keywords that suggest an email is about an internship application.
-# Used to find relevant emails in your inbox/sent folder.
+# Phrases used to find internship-related emails in Gmail.
+# All multi-word so Gmail treats them as exact phrases (quoted).
 APPLICATION_KEYWORDS = [
-    "internship",
-    "intern",
-    "application",
-    "applied",
     "your application",
     "thank you for applying",
+    "thank you for your application",
+    "we received your application",
+    "application received",
+    "you have applied",
+    "internship application",
     "summer 2026",
+    "summer 2025",
     "new grad",
     "co-op",
     "coop",
+    "application status",
+    "application confirmation",
+]
+
+# Phrases that confirm an email is about YOUR application (not a newsletter).
+# At least one of these must appear, or the email must come from a known platform.
+CONFIRMATION_PHRASES = [
+    "your application",
+    "thank you for applying",
+    "thank you for your application",
+    "we received your application",
+    "application received",
+    "you have applied",
+    "you applied",
+    "we have received your",
+    "your application has been",
+    "applied for",
+    "application for the",
+    "application to",
 ]
 
 # Keywords that indicate a REJECTION.
@@ -33,7 +53,7 @@ REJECTED_KEYWORDS = [
     "we have decided",
 ]
 
-# Keywords that indicate an ONLINE ASSESSMENT
+# Keywords that indicate an ONLINE ASSESSMENT.
 OA_KEYWORDS = [
     "online assessment",
     "coding assessment",
@@ -47,7 +67,7 @@ OA_KEYWORDS = [
     "take-home",
 ]
 
-# Well-known job platform domains used to confirm you applied.
+# Well-known job platform domains — emails from these are always real applications.
 PLATFORM_SENDERS = [
     "greenhouse.io",
     "lever.co",
@@ -59,7 +79,12 @@ PLATFORM_SENDERS = [
     "ashbyhq.com",
     "linkedin.com",
     "jobvite.com",
+    "recruitcrm.io",
+    "jobs.lever.co",
+    "hire.com",
+    "breezy.hr",
+    "bamboohr.com",
 ]
 
-# How far back to search (in days). Set to None to search all mail.
+# How far back to search (in days).
 SEARCH_DAYS = 365
