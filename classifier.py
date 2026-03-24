@@ -7,9 +7,6 @@
 #   "oa"           — online assessment / coding challenge received
 #   "no_response"  — application confirmed but no further update
 #   "other"        — caught by our query but doesn't fit above
-#
-# TODO: Implement classify_email() below.
-# ─────────────────────────────────────────────────────────────────
 
 from config import REJECTED_KEYWORDS, OA_KEYWORDS
 

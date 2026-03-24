@@ -20,7 +20,7 @@ export default function SummaryCards({ emails }) {
   // An array of card data — makes it easy to render them all with .map()
   const cards = [
     { label: "Total Applied",  value: total,      color: "#4f46e5" },
-    { label: "No Response",    value: noResponse,  color: "#6b7280" },
+    { label: "No Response",    value: noResponse,  color: "#6e7880" },
     { label: "Rejected",       value: rejected,    color: "#ef4444" },
     { label: "Online Assessments", value: oas,     color: "#f59e0b" },
   ];

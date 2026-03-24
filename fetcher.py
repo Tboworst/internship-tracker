@@ -1,4 +1,3 @@
-
 import base64
 import datetime
 from config import APPLICATION_KEYWORDS, PLATFORM_SENDERS, SEARCH_DAYS
@@ -17,17 +16,24 @@ def build_query() -> str:
 def fetch_emails(service) -> list[dict]:
     query = build_query()
     emails = []
+    page_token = None
 
-    # Get first page of message IDs
-    response = service.users().messages().list(
-        userId="me",
-        q=query
-    ).execute()
+    # Collect all message IDs across every page
+    all_messages = []
+    while True:
+        kwargs = {"userId": "me", "q": query}
+        if page_token:
+            kwargs["pageToken"] = page_token
 
-    messages = response.get("messages", [])
+        response = service.users().messages().list(**kwargs).execute()
+        all_messages.extend(response.get("messages", []))
+
+        page_token = response.get("nextPageToken")
+        if not page_token:
+            break
 
     # Fetch full message for each ID
-    for msg_meta in messages:
+    for msg_meta in all_messages:
         msg = service.users().messages().get(
             userId="me",
             id=msg_meta["id"],

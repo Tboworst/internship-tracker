@@ -1,60 +1,55 @@
 # auth.py
 # ─────────────────────────────────────────────────────────────────
-# Handles Gmail OAuth2 authentication.
+# Web OAuth2 flow for Gmail.
 #
-# SETUP INSTRUCTIONS:
-#   1. Go to https://console.cloud.google.com/
-#   2. Create a new project (e.g. "internship-tracker")
-#   3. Go to "APIs & Services" → "Enable APIs"
-#      Search for and enable "Gmail API"
-#   4. Go to "APIs & Services" → "Credentials"
-#      Click "Create Credentials" → "OAuth client ID"
-#      Choose "Desktop app", give it a name, click Create
-#   5. Download the JSON file and save it as credentials.json
-#      in this project folder
-#   6. Run this script once — a browser window will open asking
-#      you to log in and grant access. After that, token.json
-#      is saved and you won't need to log in again.
+# Set these environment variables in Railway:
+#   GOOGLE_CLIENT_ID     — from Google Cloud Console → Credentials
+#   GOOGLE_CLIENT_SECRET — from Google Cloud Console → Credentials
+#   REDIRECT_URI         — your Railway URL + /auth/google/callback
+#                          e.g. https://your-app.up.railway.app/auth/google/callback
 # ─────────────────────────────────────────────────────────────────
 
 import os
-from google.auth.transport.requests import Request
+from typing import Optional
+from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
-# We only need read access to your mailbox.
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CREDENTIALS_FILE = os.path.join(BASE_DIR, "credentials.json")
-TOKEN_FILE = os.path.join(BASE_DIR, "token.json")
+
+def _client_config() -> dict:
+    """Builds the OAuth client config from environment variables."""
+    redirect_uri = os.environ["REDIRECT_URI"]
+    return {
+        "web": {
+            "client_id": os.environ["GOOGLE_CLIENT_ID"],
+            "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": [redirect_uri],
+        }
+    }
 
 
-def get_gmail_service():
-    """
-    Authenticates with Gmail and returns a service object.
+def create_web_oauth_flow(state: Optional[str] = None) -> Flow:
+    """Creates a Google OAuth web flow using env var credentials."""
+    flow = Flow.from_client_config(_client_config(), scopes=SCOPES, state=state)
+    flow.redirect_uri = os.environ["REDIRECT_URI"]
+    return flow
 
-    TODO: Call this function from fetcher.py to get the `service`
-    you'll use for all Gmail API calls.
-    """
-    creds = None
 
-    # Load saved token if it exists
-    if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-
-    # If no valid credentials, start the OAuth flow
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-            creds = flow.run_local_server(port=0)
-
-        # Save token for next time
-        with open(TOKEN_FILE, "w") as token:
-            token.write(creds.to_json())
-
-    service = build("gmail", "v1", credentials=creds)
-    return service
+def get_gmail_service(access_token: str, refresh_token: str):
+    """Builds a Gmail service object from a user's stored OAuth tokens."""
+    creds = Credentials(
+        token=access_token,
+        refresh_token=refresh_token,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=os.environ["GOOGLE_CLIENT_ID"],
+        client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+        scopes=SCOPES,
+    )
+    if creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    return build("gmail", "v1", credentials=creds)
