@@ -5,6 +5,8 @@
 # Run locally:  uvicorn api:app --reload
 # ─────────────────────────────────────────────────────────────────
 
+import base64
+import hashlib
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -22,7 +24,7 @@ app = FastAPI()
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 SECRET_KEY = os.environ["SECRET_KEY"]          # set in Railway env vars
-OAUTH_STATES: set[str] = set()
+OAUTH_STATES: dict[str, str] = {}  # state -> code_verifier
 
 app.add_middleware(
     CORSMiddleware,
@@ -64,13 +66,22 @@ def _get_service_from_header(authorization: str | None):
 def auth_google_start():
     """Redirects the user to Google's OAuth consent screen."""
     state = secrets.token_urlsafe(24)
+
+    # Generate PKCE pair so we can verify it in the callback
+    code_verifier = secrets.token_urlsafe(96)
+    code_challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(code_verifier.encode()).digest()
+    ).rstrip(b"=").decode()
+
     flow = create_web_oauth_flow(state=state)
     auth_url, returned_state = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
         prompt="consent",
+        code_challenge=code_challenge,
+        code_challenge_method="S256",
     )
-    OAUTH_STATES.add(returned_state)
+    OAUTH_STATES[returned_state] = code_verifier
     return RedirectResponse(auth_url)
 
 
@@ -87,9 +98,9 @@ def auth_google_callback(
     if state not in OAUTH_STATES:
         return RedirectResponse(f"{FRONTEND_URL}/?auth=error&reason=invalid_state")
 
-    OAUTH_STATES.discard(state)
+    code_verifier = OAUTH_STATES.pop(state)
     flow = create_web_oauth_flow(state=state)
-    flow.fetch_token(code=code)
+    flow.fetch_token(code=code, code_verifier=code_verifier)
 
     creds = flow.credentials
     session_token = _make_session_token(creds.token, creds.refresh_token)
