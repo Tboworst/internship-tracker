@@ -94,5 +94,33 @@ PLATFORM_SENDERS = [
     "karat.com",
 ]
 
+# Keywords that indicate an INTERVIEW invitation.
+INTERVIEW_KEYWORDS = [
+    "interview invitation",
+    "schedule an interview",
+    "we'd like to interview",
+    "interview request",
+    "next steps",
+    "move forward",
+    "phone screen",
+    "technical interview",
+    "virtual interview",
+    "on-site interview",
+]
+
+# Keywords that indicate a JOB OFFER.
+OFFER_KEYWORDS = [
+    "offer letter",
+    "job offer",
+    "pleased to offer",
+    "we are offering",
+    "congratulations",
+    "offer of employment",
+    "official offer",
+    "compensation package",
+    "start date",
+    "welcome to the team",
+]
+
 # How far back to search (in days).
 SEARCH_DAYS = 365
