@@ -7,24 +7,23 @@
 # All multi-word so Gmail treats them as exact phrases (quoted).
 INTERVIEW_KEYWORDS = [
     "interview invitation",
-    "interview invitation",
     "interview schedule",
     "interview details",
     "interview preparation",
-    "interview feedback",
-    "interview feedback",
-    "we would like to invite you to an interview ",
-    "we'd like to invite you",
-    "move forward to interview"
-
+    "we would like to invite you to an interview",
+    "we'd like to invite you to interview",
+    "move forward to interview",
+    "invited to interview",
+    "schedule your interview",
 ]
 
 OFFER_KEYWORDS = [
-    "offer",
     "we are pleased to offer you the position of",
     "offer letter",
     "pleased to extend an offer",
     "offer of employment",
+    "formally offer you",
+    "extend an offer",
 ]
 
 APPLICATION_KEYWORDS = [
