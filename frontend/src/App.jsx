@@ -7,10 +7,19 @@ import EmailTable from "./components/EmailTable";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-// ── Token helpers ─────────────────────────────────────────────────
-const getToken  = ()        => localStorage.getItem("session_token");
-const saveToken = (t)       => localStorage.setItem("session_token", t);
-const clearToken = ()       => localStorage.removeItem("session_token");
+// ── Gmail token helpers ────────────────────────────────────────────
+// localStorage lets us persist the token across page refreshes.
+// session_token = the Gmail JWT issued by our backend after Google OAuth.
+const getToken   = ()  => localStorage.getItem("session_token");
+const saveToken  = (t) => localStorage.setItem("session_token", t);
+const clearToken = ()  => localStorage.removeItem("session_token");
+
+// ── Notion token helpers ───────────────────────────────────────────
+// Same pattern as Gmail — we store the Notion access token in localStorage
+// so the user stays connected to Notion across refreshes.
+const getNotionToken   = ()  => localStorage.getItem("notion_token");
+const saveNotionToken  = (t) => localStorage.setItem("notion_token", t);
+const clearNotionToken = ()  => localStorage.removeItem("notion_token");
 
 // ── Login page ────────────────────────────────────────────────────
 function LoginPage({ authError }) {
@@ -64,11 +73,16 @@ function LoginPage({ authError }) {
 
 // ── Root component ────────────────────────────────────────────────
 export default function App() {
-  const [token, setToken]       = useState(() => getToken());
-  const [authError, setAuthError] = useState(null);
-  const [emails, setEmails]     = useState([]);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState(null);
+  const [token, setToken]           = useState(() => getToken());
+  const [authError, setAuthError]   = useState(null);
+  const [emails, setEmails]         = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState(null);
+
+  // Notion state — notionToken is null if the user hasn't connected Notion yet
+  const [notionToken, setNotionToken] = useState(() => getNotionToken());
+  // "idle" | "syncing" | "done" | "error" — tracks the sync button state
+  const [syncStatus, setSyncStatus]   = useState("idle");
 
   // Pick up the JWT token that the backend passes back in the URL after OAuth
   useEffect(() => {
@@ -82,6 +96,15 @@ export default function App() {
       window.history.replaceState({}, "", "/");     // clean the URL
     } else if (authParam === "error") {
       setAuthError(params.get("reason") || "unknown");
+      window.history.replaceState({}, "", "/");
+    }
+
+    // After Notion OAuth the backend redirects back with ?notion_token=...
+    // We pick it up here, save it to localStorage, and clean the URL.
+    const notionTokenParam = params.get("notion_token");
+    if (notionTokenParam) {
+      saveNotionToken(notionTokenParam);
+      setNotionToken(notionTokenParam);
       window.history.replaceState({}, "", "/");
     }
   }, []);
@@ -155,21 +178,98 @@ export default function App() {
     </div>
   );
 
+  // Called when the user clicks "Sync to Notion".
+  // Sends the classified emails to our backend, which writes them to Notion.
+  async function handleNotionSync() {
+    // You'll need to get the database_id from somewhere — either hardcode it
+    // for now or add an input field for the user to paste it in.
+    const DATABASE_ID = "YOUR_NOTION_DATABASE_ID"; // TODO: make this dynamic
+
+    setSyncStatus("syncing");
+    try {
+      const res = await fetch(
+        // Pass the Notion token + database ID as query params.
+        // The Gmail Bearer token goes in the Authorization header as usual.
+        `${API}/sync/notion?notion_token=${notionToken}&database_id=${DATABASE_ID}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!res.ok) throw new Error("Sync failed");
+      setSyncStatus("done");
+    } catch {
+      setSyncStatus("error");
+    }
+  }
+
   // Dashboard
   return (
     <div style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "1100px", margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
         <h1 style={{ margin: 0 }}>Internship Application Tracker</h1>
-        <button
-          onClick={() => { clearToken(); setToken(null); }}
-          style={{
-            padding: "0.4rem 1rem", borderRadius: "6px",
-            border: "1px solid #d1d5db", background: "#fff",
-            color: "#374151", cursor: "pointer", fontSize: "0.85rem",
-          }}
-        >
-          Sign out
-        </button>
+
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+
+          {/* Show "Connect Notion" if the user hasn't connected yet,
+              otherwise show the "Sync to Notion" button */}
+          {!notionToken ? (
+            // Clicking this kicks off the Notion OAuth flow — same pattern
+            // as the Google sign-in link, just pointing to our Notion route.
+            <a
+              href={`${API}/auth/notion/start`}
+              style={{
+                padding: "0.4rem 1rem", borderRadius: "6px",
+                border: "1px solid #d1d5db", background: "#fff",
+                color: "#374151", cursor: "pointer", fontSize: "0.85rem",
+                textDecoration: "none",
+              }}
+            >
+              Connect Notion
+            </a>
+          ) : (
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <button
+                onClick={handleNotionSync}
+                disabled={syncStatus === "syncing"}
+                style={{
+                  padding: "0.4rem 1rem", borderRadius: "6px",
+                  border: "1px solid #d1d5db", background: "#fff",
+                  color: "#374151", cursor: "pointer", fontSize: "0.85rem",
+                }}
+              >
+                {/* Button label changes based on sync state */}
+                {syncStatus === "syncing" && "Syncing…"}
+                {syncStatus === "done"    && "Synced!"}
+                {syncStatus === "error"   && "Retry Sync"}
+                {syncStatus === "idle"    && "Sync to Notion"}
+              </button>
+
+              {/* Let the user disconnect Notion — clears the token from localStorage */}
+              <button
+                onClick={() => { clearNotionToken(); setNotionToken(null); setSyncStatus("idle"); }}
+                style={{
+                  padding: "0.4rem 0.75rem", borderRadius: "6px",
+                  border: "1px solid #d1d5db", background: "#fff",
+                  color: "#9ca3af", cursor: "pointer", fontSize: "0.8rem",
+                }}
+              >
+                Disconnect
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => { clearToken(); setToken(null); }}
+            style={{
+              padding: "0.4rem 1rem", borderRadius: "6px",
+              border: "1px solid #d1d5db", background: "#fff",
+              color: "#374151", cursor: "pointer", fontSize: "0.85rem",
+            }}
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
       <SummaryCards emails={emails} />
