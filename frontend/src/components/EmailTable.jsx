@@ -11,16 +11,22 @@
 import { useState } from "react";
 
 const STATUS_LABELS = {
-  all:         "All",
-  no_response: "No Response",
-  rejected:    "Rejected",
-  oa:          "OA",
+  all:          "All",
+  no_response:  "No Response",
+  rejected:     "Rejected",
+  oa:           "OA",
+  interview_1:  "1st Interview",
+  interview_2:  "2nd Interview",
+  offer:        "Offer",
 };
 
 const STATUS_COLORS = {
-  no_response: "#6b7280",
-  rejected:    "#ef4444",
-  oa:          "#f59e0b",
+  no_response:  "#6b7280",
+  rejected:     "#ef4444",
+  oa:           "#f59e0b",
+  interview_1:  "#3b82f6",
+  interview_2:  "#8b5cf6",
+  offer:        "#10b981",
 };
 
 export default function EmailTable({ emails }) {

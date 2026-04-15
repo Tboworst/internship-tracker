@@ -5,6 +5,28 @@
 
 # Phrases used to find internship-related emails in Gmail.
 # All multi-word so Gmail treats them as exact phrases (quoted).
+INTERVIEW_KEYWORDS = [
+    "interview invitation",
+    "interview invitation",
+    "interview schedule",
+    "interview details",
+    "interview preparation",
+    "interview feedback",
+    "interview feedback",
+    "we would like to invite you to an interview ",
+    "we'd like to invite you",
+    "move forward to interview"
+
+]
+
+OFFER_KEYWORDS = [
+    "offer",
+    "we are pleased to offer you the position of",
+    "offer letter",
+    "pleased to extend an offer",
+    "offer of employment",
+]
+
 APPLICATION_KEYWORDS = [
     "your application",
     "thank you for applying",
@@ -92,34 +114,6 @@ PLATFORM_SENDERS = [
     "pymetrics.ai",
     "hiredscore.com",
     "karat.com",
-]
-
-# Keywords that indicate an INTERVIEW invitation.
-INTERVIEW_KEYWORDS = [
-    "interview invitation",
-    "schedule an interview",
-    "we'd like to interview",
-    "interview request",
-    "next steps",
-    "move forward",
-    "phone screen",
-    "technical interview",
-    "virtual interview",
-    "on-site interview",
-]
-
-# Keywords that indicate a JOB OFFER.
-OFFER_KEYWORDS = [
-    "offer letter",
-    "job offer",
-    "pleased to offer",
-    "we are offering",
-    "congratulations",
-    "offer of employment",
-    "official offer",
-    "compensation package",
-    "start date",
-    "welcome to the team",
 ]
 
 # How far back to search (in days).

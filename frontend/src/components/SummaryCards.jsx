@@ -9,20 +9,22 @@
 // ─────────────────────────────────────────────────────────────────
 
 export default function SummaryCards({ emails }) {
-  // Count how many emails have each status
-  // TODO: replace these with real counts using .filter()
-  // Example: const rejected = emails.filter(e => e.status === "rejected").length
-  const total      = emails.length;
-  const noResponse = emails.filter((e) => e.status === "no_response").length;
-  const rejected   = emails.filter((e) => e.status === "rejected").length;
-  const oas        = emails.filter((e) => e.status === "oa").length;
+  const total       = emails.length;
+  const noResponse  = emails.filter((e) => e.status === "no_response").length;
+  const rejected    = emails.filter((e) => e.status === "rejected").length;
+  const oas         = emails.filter((e) => e.status === "oa").length;
+  const interview1  = emails.filter((e) => e.status === "interview_1").length;
+  const interview2  = emails.filter((e) => e.status === "interview_2").length;
+  const offers      = emails.filter((e) => e.status === "offer").length;
 
-  // An array of card data — makes it easy to render them all with .map()
   const cards = [
-    { label: "Total Applied",  value: total,      color: "#4f46e5" },
-    { label: "No Response",    value: noResponse,  color: "#6e7880" },
-    { label: "Rejected",       value: rejected,    color: "#ef4444" },
-    { label: "Online Assessments", value: oas,     color: "#f59e0b" },
+    { label: "Total Applied",    value: total,       color: "#4f46e5" },
+    { label: "No Response",      value: noResponse,  color: "#6e7880" },
+    { label: "Rejected",         value: rejected,    color: "#ef4444" },
+    { label: "Online Assessments", value: oas,       color: "#f59e0b" },
+    { label: "1st Interviews",   value: interview1,  color: "#3b82f6" },
+    { label: "2nd Interviews",   value: interview2,  color: "#8b5cf6" },
+    { label: "Offers",           value: offers,      color: "#10b981" },
   ];
 
   return (
