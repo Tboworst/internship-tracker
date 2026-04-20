@@ -21,6 +21,10 @@ const getNotionToken   = ()  => localStorage.getItem("notion_token");
 const saveNotionToken  = (t) => localStorage.setItem("notion_token", t);
 const clearNotionToken = ()  => localStorage.removeItem("notion_token");
 
+const getDbId   = ()  => localStorage.getItem("notion_db_id") || "";
+const saveDbId  = (v) => localStorage.setItem("notion_db_id", v);
+const clearDbId = ()  => localStorage.removeItem("notion_db_id");
+
 // ── Login page ────────────────────────────────────────────────────
 function LoginPage({ authError }) {
   return (
@@ -83,6 +87,7 @@ export default function App() {
   const [notionToken, setNotionToken] = useState(() => getNotionToken());
   // "idle" | "syncing" | "done" | "error" — tracks the sync button state
   const [syncStatus, setSyncStatus]   = useState("idle");
+  const [databaseId, setDatabaseId]   = useState(() => getDbId());
 
   // Pick up the JWT token that the backend passes back in the URL after OAuth
   useEffect(() => {
@@ -181,16 +186,12 @@ export default function App() {
   // Called when the user clicks "Sync to Notion".
   // Sends the classified emails to our backend, which writes them to Notion.
   async function handleNotionSync() {
-    // You'll need to get the database_id from somewhere — either hardcode it
-    // for now or add an input field for the user to paste it in.
-    const DATABASE_ID = "YOUR_NOTION_DATABASE_ID"; // TODO: make this dynamic
-
     setSyncStatus("syncing");
     try {
       const res = await fetch(
         // Pass the Notion token + database ID as query params.
         // The Gmail Bearer token goes in the Authorization header as usual.
-        `${API}/sync/notion?notion_token=${notionToken}&database_id=${DATABASE_ID}`,
+        `${API}/sync/notion?notion_token=${notionToken}&database_id=${databaseId}`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -229,16 +230,26 @@ export default function App() {
             </a>
           ) : (
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <input
+                type="text"
+                placeholder="Paste Notion database ID"
+                value={databaseId}
+                onChange={(e) => { setDatabaseId(e.target.value); saveDbId(e.target.value); setSyncStatus("idle"); }}
+                style={{
+                  padding: "0.4rem 0.75rem", borderRadius: "6px",
+                  border: "1px solid #d1d5db", fontSize: "0.85rem",
+                  width: "220px", color: "#374151",
+                }}
+              />
               <button
                 onClick={handleNotionSync}
-                disabled={syncStatus === "syncing"}
+                disabled={syncStatus === "syncing" || !databaseId.trim()}
                 style={{
                   padding: "0.4rem 1rem", borderRadius: "6px",
                   border: "1px solid #d1d5db", background: "#fff",
                   color: "#374151", cursor: "pointer", fontSize: "0.85rem",
                 }}
               >
-                {/* Button label changes based on sync state */}
                 {syncStatus === "syncing" && "Syncing…"}
                 {syncStatus === "done"    && "Synced!"}
                 {syncStatus === "error"   && "Retry Sync"}
@@ -247,7 +258,7 @@ export default function App() {
 
               {/* Let the user disconnect Notion — clears the token from localStorage */}
               <button
-                onClick={() => { clearNotionToken(); setNotionToken(null); setSyncStatus("idle"); }}
+                onClick={() => { clearNotionToken(); setNotionToken(null); clearDbId(); setDatabaseId(""); setSyncStatus("idle"); }}
                 style={{
                   padding: "0.4rem 0.75rem", borderRadius: "6px",
                   border: "1px solid #d1d5db", background: "#fff",
