@@ -207,80 +207,81 @@ export default function App() {
   // Dashboard
   return (
     <div style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "1100px", margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+      {/* Header row: title + sign out */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
         <h1 style={{ margin: 0 }}>Internship Application Tracker</h1>
+        <button
+          onClick={() => { clearToken(); setToken(null); }}
+          style={{
+            padding: "0.4rem 1rem", borderRadius: "6px",
+            border: "1px solid #d1d5db", background: "#fff",
+            color: "#374151", cursor: "pointer", fontSize: "0.85rem",
+          }}
+        >
+          Sign out
+        </button>
+      </div>
 
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+      {/* Notion row: connect / sync controls */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: "0.75rem",
+        padding: "0.6rem 1rem", marginBottom: "1.25rem",
+        background: "#f3f4f6", borderRadius: "8px",
+        border: "1px solid #e5e7eb",
+      }}>
+        <span style={{ fontSize: "0.85rem", color: "#6b7280", marginRight: "0.25rem" }}>Notion</span>
 
-          {/* Show "Connect Notion" if the user hasn't connected yet,
-              otherwise show the "Sync to Notion" button */}
-          {!notionToken ? (
-            // Clicking this kicks off the Notion OAuth flow — same pattern
-            // as the Google sign-in link, just pointing to our Notion route.
-            <a
-              href={`${API}/auth/notion/start`}
-              style={{
-                padding: "0.4rem 1rem", borderRadius: "6px",
-                border: "1px solid #d1d5db", background: "#fff",
-                color: "#374151", cursor: "pointer", fontSize: "0.85rem",
-                textDecoration: "none",
-              }}
-            >
-              Connect Notion
-            </a>
-          ) : (
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <input
-                type="text"
-                placeholder="Paste Notion database ID"
-                value={databaseId}
-                onChange={(e) => { setDatabaseId(e.target.value); saveDbId(e.target.value); setSyncStatus("idle"); }}
-                style={{
-                  padding: "0.4rem 0.75rem", borderRadius: "6px",
-                  border: "1px solid #d1d5db", fontSize: "0.85rem",
-                  width: "220px", color: "#374151",
-                }}
-              />
-              <button
-                onClick={handleNotionSync}
-                disabled={syncStatus === "syncing" || !databaseId.trim()}
-                style={{
-                  padding: "0.4rem 1rem", borderRadius: "6px",
-                  border: "1px solid #d1d5db", background: "#fff",
-                  color: "#374151", cursor: "pointer", fontSize: "0.85rem",
-                }}
-              >
-                {syncStatus === "syncing" && "Syncing…"}
-                {syncStatus === "done"    && "Synced!"}
-                {syncStatus === "error"   && "Retry Sync"}
-                {syncStatus === "idle"    && "Sync to Notion"}
-              </button>
-
-              {/* Let the user disconnect Notion — clears the token from localStorage */}
-              <button
-                onClick={() => { clearNotionToken(); setNotionToken(null); clearDbId(); setDatabaseId(""); setSyncStatus("idle"); }}
-                style={{
-                  padding: "0.4rem 0.75rem", borderRadius: "6px",
-                  border: "1px solid #d1d5db", background: "#fff",
-                  color: "#9ca3af", cursor: "pointer", fontSize: "0.8rem",
-                }}
-              >
-                Disconnect
-              </button>
-            </div>
-          )}
-
-          <button
-            onClick={() => { clearToken(); setToken(null); }}
+        {!notionToken ? (
+          <a
+            href={`${API}/auth/notion/start`}
             style={{
               padding: "0.4rem 1rem", borderRadius: "6px",
               border: "1px solid #d1d5db", background: "#fff",
               color: "#374151", cursor: "pointer", fontSize: "0.85rem",
+              textDecoration: "none",
             }}
           >
-            Sign out
-          </button>
-        </div>
+            Connect Notion
+          </a>
+        ) : (
+          <>
+            <input
+              type="text"
+              placeholder="Paste Notion database ID"
+              value={databaseId}
+              onChange={(e) => { setDatabaseId(e.target.value); saveDbId(e.target.value); setSyncStatus("idle"); }}
+              style={{
+                padding: "0.4rem 0.75rem", borderRadius: "6px",
+                border: "1px solid #d1d5db", fontSize: "0.85rem",
+                width: "220px", color: "#374151", background: "#fff",
+              }}
+            />
+            <button
+              onClick={handleNotionSync}
+              disabled={syncStatus === "syncing" || !databaseId.trim()}
+              style={{
+                padding: "0.4rem 1rem", borderRadius: "6px",
+                border: "1px solid #d1d5db", background: "#fff",
+                color: "#374151", cursor: "pointer", fontSize: "0.85rem",
+              }}
+            >
+              {syncStatus === "syncing" && "Syncing…"}
+              {syncStatus === "done"    && "Synced!"}
+              {syncStatus === "error"   && "Retry Sync"}
+              {syncStatus === "idle"    && "Sync to Notion"}
+            </button>
+            <button
+              onClick={() => { clearNotionToken(); setNotionToken(null); clearDbId(); setDatabaseId(""); setSyncStatus("idle"); }}
+              style={{
+                padding: "0.4rem 0.75rem", borderRadius: "6px",
+                border: "1px solid #d1d5db", background: "#fff",
+                color: "#9ca3af", cursor: "pointer", fontSize: "0.8rem",
+              }}
+            >
+              Disconnect
+            </button>
+          </>
+        )}
       </div>
 
       <SummaryCards emails={emails} />
