@@ -10,20 +10,28 @@ INTERVIEW_KEYWORDS = [
     "interview schedule",
     "interview details",
     "interview preparation",
-    "we would like to invite you to an interview",
-    "we'd like to invite you to interview",
+    "interview feedback",
+    "we would like to invite you to an interview ",
+    "we'd like to invite you",
     "move forward to interview",
-    "invited to interview",
-    "schedule your interview",
+    "interview scheduled",
+    "behavioral interview",
+    "next steps",
+    "second round interview",
+    "phone screen",
+    "virtual interview",
+    "follow-up interview"
+
+
 ]
 
 OFFER_KEYWORDS = [
+    "offer",
     "we are pleased to offer you the position of",
     "offer letter",
     "pleased to extend an offer",
     "offer of employment",
-    "formally offer you",
-    "extend an offer",
+    "formally offer"
 ]
 
 APPLICATION_KEYWORDS = [

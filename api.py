@@ -11,6 +11,8 @@ import os
 import secrets
 from datetime import datetime, timedelta, timezone
 
+import requests
+
 import jwt
 from fastapi import FastAPI, HTTPException, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,7 +21,7 @@ from fastapi.responses import RedirectResponse
 from auth import create_web_oauth_flow, get_gmail_service
 from fetcher import fetch_emails
 from classifier import classify_all
-
+from urllib.parse import urlencode
 app = FastAPI()
 
 FRONTEND_URL        = os.getenv("FRONTEND_URL", "http://localhost:5173")
@@ -34,7 +36,7 @@ user_count: int = 0                            # resets on redeploy
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[FRONTEND_URL],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -156,17 +158,16 @@ def get_summary(authorization: str | None = Header(None)):
 @app.get("/auth/notion/start")
 def auth_notion_start():
     """Redirects the user to Notion's OAuth consent screen."""
-
-    # TODO: Build the Notion authorization URL with these query params:
-    #   - client_id      → NOTION_CLIENT_ID
-    #   - redirect_uri   → NOTION_REDIRECT_URI
-    #   - response_type  → "code"
-    #   - owner          → "user"  (gives access to the user's workspace, not a bot)
-    #
-    # Base URL: https://api.notion.com/v1/oauth/authorize
-    #
-    # Then return RedirectResponse(url) just like auth_google_start does.
-    pass
+    base_url = "https://api.notion.com/v1/oauth/authorize"
+    params = {
+        "client_id":NOTION_CLIENT_ID,
+        "redirect_uri":NOTION_REDIRECT_URI,
+        "response_type": "code",
+        "owner":"user"
+    }
+    auth_url = f"{base_url}?{urlencode(params)}"
+    return RedirectResponse(auth_url)
+    
 
 
 @app.get("/auth/notion/callback")
@@ -175,36 +176,32 @@ def auth_notion_callback(
     error: str = Query(None),
 ):
     """Exchanges the Notion auth code for an access token."""
+    #if the user cancels his linking of notion 
+    if error:
+        return RedirectResponse(f"{FRONTEND_URL}/?notion_error={error}")
 
-    # TODO step 1: if `error` is set, redirect to frontend with error
-    #   return RedirectResponse(f"{FRONTEND_URL}/?notion_error={error}")
+    # building for auth credentials 
+    credentials = f"{NOTION_CLIENT_ID}:{NOTION_CLIENT_SECRET}"
+    encoded_credentials = base64.b64encode(credentials.encode()).decode()
 
-    # TODO step 2: exchange `code` for an access token.
-    #   Make a POST request to: https://api.notion.com/v1/oauth/token
-    #
-    #   Headers:
-    #     - Content-Type: application/json
-    #     - Authorization: "Basic " + base64(NOTION_CLIENT_ID + ":" + NOTION_CLIENT_SECRET)
-    #       (use base64.b64encode(...).decode() — similar to how Google OAuth works)
-    #
-    #   Body (JSON):
-    #     {
-    #       "grant_type": "authorization_code",
-    #       "code": code,
-    #       "redirect_uri": NOTION_REDIRECT_URI
-    #     }
-    #
-    #   Hint: use the `requests` library — import requests at the top of the file
-    #   response = requests.post(url, headers=..., json=...)
-    #   data = response.json()
+    #server to server exchange- traded the code to get a token
+    token_response = requests.post( "https://api.notion.com/v1/oauth/token",
+    headers={"Content-Type":"application/json",
+    "Authorization": f"Basic {encoded_credentials}",
 
-    # TODO step 3: pull the token out of the response
-    #   notion_token = data["access_token"]
+    },json = {
+        "grant_type":"authorization_code",
+        "code":code,
+        "redirect_uri":NOTION_REDIRECT_URI,
+        },
 
-    # TODO step 4: redirect back to the frontend with the token in the URL
-    #   return RedirectResponse(f"{FRONTEND_URL}/?notion_token={notion_token}")
-    #   The frontend will pick it up from the URL and save it to localStorage.
-    pass
+    )
+
+    #pulling the token out of the data 
+    notion_token = token_response.json()["access_token"]
+    #return that token 
+    return RedirectResponse(f"{FRONTEND_URL}/?notion_token={notion_token}")
+    
 
 
 # ── Notion sync route ──────────────────────────────────────────────
@@ -217,39 +214,36 @@ def sync_to_notion(
 ):
     """Fetches classified emails and pushes each one as a row into a Notion database."""
 
-    # TODO step 1: get the Gmail service from the Bearer token (already built)
-    #   service = _get_service_from_header(authorization)
+    
+    service = _get_service_from_header(authorization)
 
-    # TODO step 2: fetch and classify emails (already built)
-    #   emails = fetch_emails(service)
-    #   classified = classify_all(emails)
+    emails = fetch_emails(service)
+    classified = classify_all(emails)
 
-    # TODO step 3: for each email, create a page in the Notion database.
-    #   POST https://api.notion.com/v1/pages
-    #
-    #   Headers:
-    #     - Authorization: f"Bearer {notion_token}"
-    #     - Notion-Version: "2022-06-28"   ← required by Notion API
-    #     - Content-Type: application/json
-    #
-    #   Body for each email:
-    #     {
-    #       "parent": { "database_id": database_id },
-    #       "properties": {
-    #         "Subject": { "title": [{ "text": { "content": email["subject"] } }] },
-    #         "Company": { "rich_text": [{ "text": { "content": email["sender"] } }] },
-    #         "Status":  { "select": { "name": email["status"] } },
-    #         "Date":    { "rich_text": [{ "text": { "content": email["date"] } }] },
-    #       }
-    #     }
-    #
-    #   NOTE: the property names ("Subject", "Company", etc.) must exactly match
-    #   the column names in the user's Notion database.
-
-    # TODO step 4: count how many pages were created successfully and return it
-    #   return { "synced": count }
-    pass
-
+    headers = {
+        "Authorization": f"Bearer {notion_token}",
+        "Notion-Version": "2022-06-28",   # required by Notion's API
+        "Content-Type": "application/json",
+      }
+    
+    #counts the amounts of internships used for this mostly for tracking errors 
+    count = 0 
+    
+    for email in classified:
+        body = {
+              "parent": {"database_id": database_id},
+              "properties": {
+                  "Subject": {"title":     [{"text": {"content": email["subject"]}}]},
+                  "Company": {"rich_text": [{"text": {"content": email["sender"]}}]},
+                  "Status":  {"select":    {"name": email["status"]}},
+                  "Date":    {"rich_text": [{"text": {"content": email["date"]}}]},
+              },
+          }
+        response = requests.post("https://api.notion.com/v1/pages", headers=headers, json=body)
+        if response.status_code == 200:
+            count +=1
+    
+    return {"synced":count}
 
 # ── Admin route (only you) ─────────────────────────────────────────
 
